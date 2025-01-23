@@ -67,6 +67,12 @@ public class PaymentStatus {
   @SerializedName("pin")
   private String pin = null;
 
+  @SerializedName("tag")
+  private String tag = null;
+
+  @SerializedName("errorCode")
+  private Integer errorCode = null;
+
   /**
    * payment processing status
    */
@@ -410,6 +416,41 @@ public class PaymentStatus {
     this.payItemDescr = payItemDescr;
   }
 
+  public PaymentStatus tag(String tag) {
+    this.tag = tag;
+    return this;
+  }
+
+   /**
+   * optional custom field to be freely used for internal payment collection referencing and tagging. Will be included in payment status responses and reports
+   * @return tag
+  **/
+  @Schema(description = "optional custom field to be freely used for internal payment collection referencing and tagging. Will be included in payment status responses and reports")
+  public String getTag() {
+    return tag;
+  }
+
+  public void setTag(String tag) {
+    this.tag = tag;
+  }
+
+  public PaymentStatus errorCode(Integer errorCode) {
+    this.errorCode = errorCode;
+    return this;
+  }
+
+   /**
+   * Error code in case of failed payment
+   * @return errorCode
+  **/
+  @Schema(required = true, description = "Error code in case of failed payment")
+  public Integer getErrorCode() {
+    return errorCode;
+  }
+
+  public void setErrorCode(Integer errorCode) {
+    this.errorCode = errorCode;
+  }
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -433,14 +474,16 @@ public class PaymentStatus {
         Objects.equals(this.localCur, paymentStatus.localCur) &&
         Objects.equals(this.systemCur, paymentStatus.systemCur) &&
         Objects.equals(this.pin, paymentStatus.pin) &&
+        Objects.equals(this.tag, paymentStatus.tag) &&
         Objects.equals(this.status, paymentStatus.status) &&
         Objects.equals(this.payItemId, paymentStatus.payItemId) &&
-        Objects.equals(this.payItemDescr, paymentStatus.payItemDescr);
+        Objects.equals(this.payItemDescr, paymentStatus.payItemDescr) &&
+        Objects.equals(this.errorCode, paymentStatus.errorCode);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ptn, serviceid, merchant, timestamp, receiptNumber, veriCode, clearingDate, trid, priceLocalCur, priceSystemCur, localCur, systemCur, pin, status, payItemId, payItemDescr);
+    return Objects.hash(ptn, serviceid, merchant, timestamp, receiptNumber, veriCode, clearingDate, trid, priceLocalCur, priceSystemCur, localCur, systemCur, pin, tag, status, payItemId, payItemDescr, errorCode);
   }
 
 
@@ -462,9 +505,11 @@ public class PaymentStatus {
     sb.append("    localCur: ").append(toIndentedString(localCur)).append("\n");
     sb.append("    systemCur: ").append(toIndentedString(systemCur)).append("\n");
     sb.append("    pin: ").append(toIndentedString(pin)).append("\n");
+    sb.append("    tag: ").append(toIndentedString(tag)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    payItemId: ").append(toIndentedString(payItemId)).append("\n");
     sb.append("    payItemDescr: ").append(toIndentedString(payItemDescr)).append("\n");
+    sb.append("    errorCode: ").append(toIndentedString(errorCode)).append("\n");
     sb.append("}");
     return sb.toString();
   }

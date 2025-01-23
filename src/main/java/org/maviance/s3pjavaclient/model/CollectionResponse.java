@@ -61,6 +61,9 @@ public class CollectionResponse {
   @SerializedName("pin")
   private String pin = null;
 
+  @SerializedName("tag")
+  private String tag = null;
+
   /**
    * payment processing status
    */
@@ -293,6 +296,24 @@ public class CollectionResponse {
     this.trid = trid;
   }
 
+  public CollectionResponse tag(String tag) {
+    this.tag = tag;
+    return this;
+  }
+
+   /**
+   * optional custom field to be freely used for internal payment collection referencing and tagging. Will be included in payment status responses and reports.
+   * @return tag
+  **/
+  @Schema(description = "optional custom field to be freely used for internal payment collection referencing and tagging. Will be included in payment status responses and reports")
+  public String getTag() {
+    return trid;
+  }
+
+  public void setTag(String tag) {
+    this.tag = tag;
+  }
+
   public CollectionResponse pin(String pin) {
     this.pin = pin;
     return this;
@@ -385,6 +406,7 @@ public class CollectionResponse {
         Objects.equals(this.localCur, collectionResponse.localCur) &&
         Objects.equals(this.systemCur, collectionResponse.systemCur) &&
         Objects.equals(this.trid, collectionResponse.trid) &&
+        Objects.equals(this.tag, collectionResponse.tag) &&
         Objects.equals(this.pin, collectionResponse.pin) &&
         Objects.equals(this.status, collectionResponse.status) &&
         Objects.equals(this.payItemId, collectionResponse.payItemId) &&
@@ -393,7 +415,7 @@ public class CollectionResponse {
 
   @Override
   public int hashCode() {
-    return Objects.hash(ptn, timestamp, agentBalance, receiptNumber, veriCode, priceLocalCur, priceSystemCur, localCur, systemCur, trid, pin, status, payItemId, payItemDescr);
+    return Objects.hash(ptn, timestamp, agentBalance, receiptNumber, veriCode, priceLocalCur, priceSystemCur, localCur, systemCur, trid, tag, pin, status, payItemId, payItemDescr);
   }
 
 
@@ -412,6 +434,7 @@ public class CollectionResponse {
     sb.append("    localCur: ").append(toIndentedString(localCur)).append("\n");
     sb.append("    systemCur: ").append(toIndentedString(systemCur)).append("\n");
     sb.append("    trid: ").append(toIndentedString(trid)).append("\n");
+    sb.append("    tag: ").append(toIndentedString(tag)).append("\n");
     sb.append("    pin: ").append(toIndentedString(pin)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    payItemId: ").append(toIndentedString(payItemId)).append("\n");
