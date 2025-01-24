@@ -51,6 +51,12 @@ public class CollectionRequest {
   @SerializedName("trid")
   private String trid = null;
 
+  @SerializedName("tag")
+  private String tag = null;
+
+  @SerializedName("cdata")
+  private String cdata = null;
+
   public CollectionRequest quoteId(String quoteId) {
     this.quoteId = quoteId;
     return this;
@@ -195,6 +201,42 @@ public class CollectionRequest {
     this.trid = trid;
   }
 
+  public CollectionRequest tag(String tag) {
+    this.tag = tag;
+    return this;
+  }
+
+   /**
+   * optional custom field to be freely used for internal payment collection referencing and tagging. Will be included in payment status responses and reports.
+   * @return tag
+  **/
+  @Schema(description = "optional custom field to be freely used for internal payment collection referencing and tagging. Will be included in payment status responses and reports")
+  public String getTag() {
+    return trid;
+  }
+
+  public void setTag(String tag) {
+    this.tag = tag;
+  }
+
+  public CollectionRequest cdata(String cdata) {
+    this.cdata = cdata;
+    return this;
+  }
+
+   /**
+   * Custom valid json string containing extended - non standard - information needed for special purpose usecases.
+   * @return cdata
+  **/
+  @Schema(description = "Custom valid json string containing extended - non standard - information needed for special purpose usecases")
+  public String getCdata() {
+    return trid;
+  }
+
+  public void setCdata(String cdata) {
+    this.cdata = cdata;
+  }
+
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -212,12 +254,14 @@ public class CollectionRequest {
         Objects.equals(this.customerAddress, collectionRequest.customerAddress) &&
         Objects.equals(this.customerNumber, collectionRequest.customerNumber) &&
         Objects.equals(this.serviceNumber, collectionRequest.serviceNumber) &&
-        Objects.equals(this.trid, collectionRequest.trid);
+        Objects.equals(this.trid, collectionRequest.trid) &&
+        Objects.equals(this.tag, collectionRequest.tag) &&
+        Objects.equals(this.cdata, collectionRequest.cdata);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(quoteId, customerPhonenumber, customerEmailaddress, customerName, customerAddress, customerNumber, serviceNumber, trid);
+    return Objects.hash(quoteId, customerPhonenumber, customerEmailaddress, customerName, customerAddress, customerNumber, serviceNumber, trid, tag, cdata);
   }
 
 
@@ -234,6 +278,8 @@ public class CollectionRequest {
     sb.append("    customerNumber: ").append(toIndentedString(customerNumber)).append("\n");
     sb.append("    serviceNumber: ").append(toIndentedString(serviceNumber)).append("\n");
     sb.append("    trid: ").append(toIndentedString(trid)).append("\n");
+    sb.append("    tag: ").append(toIndentedString(tag)).append("\n");
+    sb.append("    cdata: ").append(toIndentedString(cdata)).append("\n");
     sb.append("}");
     return sb.toString();
   }
