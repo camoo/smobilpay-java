@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 public class ApiClient {
 
     private String basePath; // API base Url
@@ -1219,64 +1220,129 @@ public class ApiClient {
     }
 
     /**
-     * Apply SSL related settings to httpClient according to the current values of verifyingSsl and
-     * sslCaCert.
-     * @throws GeneralSecurityException
+     * Apply SSL related settings to httpClient according to the current values of
+     * verifyingSsl and sslCaCert.
+     *
+     * Strategy:
+     * - If verifyingSsl == false  -> trust all (ONLY for testing!)
+     * - If sslCaCert != null      -> trust (custom CA(s) + default JVM CAs)
+     * - Else                      -> use default JVM CAs (OkHttp default)
      */
     private void applySslSettings() throws GeneralSecurityException {
         TrustManager[] trustManagers = null;
         HostnameVerifier hostnameVerifier = null;
+
         if (!verifyingSsl) {
-            TrustManager trustAll = new X509TrustManager() {
+            // ⚠ ONLY FOR TESTING – DO NOT USE IN PRODUCTION
+            X509TrustManager trustAll = new X509TrustManager() {
                 @Override
-                public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                public void checkClientTrusted(X509Certificate[] chain, String authType)
+                        throws CertificateException {
                 }
 
                 @Override
-                public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+                public void checkServerTrusted(X509Certificate[] chain, String authType)
+                        throws CertificateException {
                 }
 
                 @Override
                 public X509Certificate[] getAcceptedIssuers() {
-                    return null;
+                    return new X509Certificate[0];
                 }
             };
+
             SSLContext sslContext = SSLContext.getInstance("TLS");
             trustManagers = new TrustManager[] { trustAll };
             hostnameVerifier = new HostnameVerifier() {
                 @Override
                 public boolean verify(String hostname, SSLSession session) {
+                    // Always accept (again: testing only)
                     return true;
                 }
             };
-        } else if (sslCaCert != null) {
-            char[] password = null; // Any password will work.
+
+            sslContext.init(null, trustManagers, new SecureRandom());
+            httpClient.setSslSocketFactory(sslContext.getSocketFactory());
+            httpClient.setHostnameVerifier(hostnameVerifier);
+            return;
+        }
+
+        // verifyingSsl == true
+        if (sslCaCert != null) {
+            // 1) Load your custom CA(s) from sslCaCert
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
             Collection<? extends Certificate> certificates = certificateFactory.generateCertificates(sslCaCert);
             if (certificates.isEmpty()) {
                 throw new IllegalArgumentException("expected non-empty set of trusted certificates");
             }
-            KeyStore caKeyStore = newEmptyKeyStore(password);
+
+            // Create KeyStore only with your provided cert(s)
+            KeyStore caKeyStore = newEmptyKeyStore(null);
             int index = 0;
             for (Certificate certificate : certificates) {
                 String certificateAlias = "ca" + Integer.toString(index++);
                 caKeyStore.setCertificateEntry(certificateAlias, certificate);
             }
-            TrustManagerFactory trustManagerFactory =
+
+            // TrustManager from your custom keystore
+            TrustManagerFactory customTmf =
                     TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(caKeyStore);
-            trustManagers = trustManagerFactory.getTrustManagers();
+            customTmf.init(caKeyStore);
+            X509TrustManager customTm = (X509TrustManager) customTmf.getTrustManagers()[0];
+
+            // 2) Default JVM TrustManager (system CAs)
+            TrustManagerFactory defaultTmf =
+                    TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            defaultTmf.init((KeyStore) null); // null => system default keystore
+            X509TrustManager defaultTm = (X509TrustManager) defaultTmf.getTrustManagers()[0];
+
+            // 3) Combined TrustManager: first try custom, then default
+            X509TrustManager combinedTm = new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType)
+                        throws CertificateException {
+                    try {
+                        customTm.checkClientTrusted(chain, authType);
+                    } catch (CertificateException e) {
+                        defaultTm.checkClientTrusted(chain, authType);
+                    }
+                }
+
+                @Override
+                public void checkServerTrusted(X509Certificate[] chain, String authType)
+                        throws CertificateException {
+                    try {
+                        customTm.checkServerTrusted(chain, authType);
+                    } catch (CertificateException e) {
+                        defaultTm.checkServerTrusted(chain, authType);
+                    }
+                }
+
+                @Override
+                public X509Certificate[] getAcceptedIssuers() {
+                    X509Certificate[] a = customTm.getAcceptedIssuers();
+                    X509Certificate[] b = defaultTm.getAcceptedIssuers();
+                    X509Certificate[] all = new X509Certificate[a.length + b.length];
+                    System.arraycopy(a, 0, all, 0, a.length);
+                    System.arraycopy(b, 0, all, a.length, b.length);
+                    return all;
+                }
+            };
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(keyManagers, new TrustManager[] { combinedTm }, new SecureRandom());
+            httpClient.setSslSocketFactory(sslContext.getSocketFactory());
+
+            // leave default HostnameVerifier (strict)
+            return;
         }
 
-        if (keyManagers != null || trustManagers != null) {
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagers, trustManagers, new SecureRandom());
-            httpClient.setSslSocketFactory(sslContext.getSocketFactory());
-        } else {
-            httpClient.setSslSocketFactory(null);
-        }
-        httpClient.setHostnameVerifier(hostnameVerifier);
+        // verifyingSsl == true && sslCaCert == null:
+        // -> Don't touch httpClient SSL; it will use system defaults
+        httpClient.setSslSocketFactory(null);
+        httpClient.setHostnameVerifier(null);
     }
+
 
     private KeyStore newEmptyKeyStore(char[] password) throws GeneralSecurityException {
         try {
